@@ -29,6 +29,7 @@ import java.util.Locale;
 
 import android.app.Activity;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.telephony.SmsManager;
@@ -140,11 +141,9 @@ public class ThirdActivity extends Activity {
 
 			if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
 					ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
-					ActivityCompat.checkSelfPermission(this, android.Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED ||
-					ActivityCompat.checkSelfPermission(this, android.Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+					ActivityCompat.checkSelfPermission(this, android.Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED) {
 				ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION,
-						android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.INTERNET,
-						android.Manifest.permission.SEND_SMS}, 1);
+						android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.INTERNET}, 1);
 
 			}
 			//Criteria criteria = new Criteria();
@@ -182,6 +181,8 @@ public class ThirdActivity extends Activity {
 				if (grantResults.length > 0
 						&& grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 					Location location = locationMangaer.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                    if(location==null)
+                        location =  locationMangaer.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 					locationMangaer.requestLocationUpdates(LocationManager
 							.GPS_PROVIDER, 0, 0, locationListener);
 					if (location != null) {
@@ -191,6 +192,8 @@ public class ThirdActivity extends Activity {
 				} else {
 					// permission denied, boo! Disable the
 					// functionality that depends on this permission.
+					ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION,
+							android.Manifest.permission.ACCESS_COARSE_LOCATION, android.Manifest.permission.INTERNET}, 1);
 				}
 				return;
 			}
@@ -274,6 +277,9 @@ public class ThirdActivity extends Activity {
 
 					Location location = locationMangaer.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
 
+					if(location==null)
+                        location =  locationMangaer.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
 					locationMangaer.requestLocationUpdates(LocationManager
 							.GPS_PROVIDER, 0, 0, locationListener);
 
@@ -336,8 +342,10 @@ public class ThirdActivity extends Activity {
 					System.out.println("PhNo: "+cn.getPhoneNumber()+" "+"Message: "+MySms);
 					t.setText("Message sent");
 
-					SmsManager smsManager = SmsManager.getDefault();
-					smsManager.sendTextMessage(cn.getPhoneNumber(), null, MySms, null, null);
+					//SmsManager smsManager = SmsManager.getDefault();
+					//smsManager.sendTextMessage(cn.getPhoneNumber(), null, MySms, null, null);
+
+                    startSMSIntent(cn.getPhoneNumber(),MySms);
 
 					Toast.makeText(getApplicationContext(), "SMS Sent!", Toast.LENGTH_LONG).show();
 
@@ -445,6 +453,16 @@ public class ThirdActivity extends Activity {
 			return false;
 		}
 	}
+
+    public void startSMSIntent(String phoneNumber, String message) {
+        Intent intent = new Intent(Intent.ACTION_SENDTO);
+        // This ensures only SMS apps respond
+        intent.setData(Uri.parse("smsto:"+phoneNumber));
+        intent.putExtra("sms_body", message);
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(intent);
+        }
+    }
 
 
 }
